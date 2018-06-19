@@ -1,0 +1,226 @@
+<!doctype html>
+<html>
+
+<head>
+    <meta charset=utf-8>
+    <link rel="icon shortcut" href=img/logo.png type=image/png>
+    <link rel=apple-touch-icon href=img/logo.png>
+    <link rel=stylesheet href=lib/bootstrap-4.0.0-dist/css/bootstrap.min.css>
+    <link rel=stylesheet href=css/base.css>
+    <link rel=stylesheet href=css/ui-block.css>
+    <meta name=viewport content="width=device-width">
+    <style>
+        .active1 {
+            display: none;
+        }
+
+        .errmsg {
+            color: red;
+        }
+
+        .form-control {
+            text-align: center;
+        }
+
+        .hash,
+        .information {
+            text-align: center;
+        }
+
+        .information {
+            margin-top: 20px;
+        }
+
+        .mod-child td:last-child {
+            padding-bottom: 0;
+            padding-top: 0;
+            vertical-align: middle;
+        }
+
+        .number-comma input.form-control {
+            /* override .form-control:disabled */
+            background-color: initial;
+            border: 0;
+        }
+
+        .table tr>td:first-child {
+            text-align: left;
+        }
+    </style>
+    <title>NEBULAS</title>
+</head>
+
+<body>
+    <div class=logo-main></div>
+    <div class=header></div>
+
+    <section class="container hash">
+        <article class=row></article>
+        <section class=col>
+            <h1 data-i18n=header/check>Check TX Status</h1>
+            <p data-i18n=check/blah></p>
+        </section>
+        <section class="col text-center">
+            <input id=input class=form-control data-validate-order-matters="required lengthEq64" data-i18n=placeholder/tx#>
+            <button id=btn class="btn btn-primary" data-i18n=header/check>Check TX Status</button>
+            <br>
+            <span class="active1 errmsg" data-i18n=check/comment1>Please enter a valid TX hash</span>
+        </section>
+    </section>
+
+    <section class="active1 container information" id=info>
+        <h4 data-i18n=check/tx-details>Transaction Details</h4>
+        <br>
+        <table class="table table-striped">
+            <tbody>
+                <tr>
+                    <td>TX Hash</td>
+                    <td class=tx_hash></td>
+                </tr>
+                <tr>
+                    <td>Contract address</td>
+                    <td class=contract_addr></td>
+                </tr>
+                <tr>
+                    <td>TxReceipt Status</td>
+                    <td class=status></td>
+                </tr>
+                <tr>
+                    <td data-i18n=send-nas/from-address>From Address</td>
+                    <td class=from_address></td>
+                </tr>
+                <tr>
+                    <td data-i18n=send-nas/to-address>To Address</td>
+                    <td class=to_address></td>
+                </tr>
+                <tr class=mod-child>
+                    <td data-i18n=amount>Amount</td>
+                    <td>
+                        <div class="amount number-comma" data-disabled data-unit=wei></div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>Nonce</td>
+                    <td class=nonce></td>
+                </tr>
+                <tr class=mod-child>
+                    <td data-i18n=gas-price>Gas Price</td>
+                    <td>
+                        <div class="gas-price number-comma" data-disabled data-unit=wei></div>
+                    </td>
+                </tr>
+                <tr class=mod-child>
+                    <td data-i18n=gas-limit>Gas Limit</td>
+                    <td>
+                        <div class="gas-limit number-comma" data-disabled></div>
+                    </td>
+                </tr>
+                <tr class=mod-child>
+                    <td data-i18n=gas-used>Gas Used</td>
+                    <td>
+                        <div class="gas-used number-comma" data-disabled data-unit=wei></div>
+                    </td>
+                </tr>
+                <tr>
+                    <td data-i18n=data>Data</td>
+                    <td class=data>
+                        <textarea name=code id=code cols=80 rows=6 wrap=virtual disabled></textarea>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <div class="fade loading modal" data-backdrop=static>
+        <div class=modal-dialog>
+            <div class=modal-content>
+                <div class=modal-body>
+                    <div class=progress>
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" role=progressbar style=width:100%></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class=footer></div>
+
+    <script src=lib/jquery-3.3.1.min.js></script>
+    <script>if (typeof module === 'object') {window.jQuery = window.$ = module.exports;};</script>
+    <script src=lib/bootstrap-4.0.0-dist/js/bootstrap.bundle.min.js data-depends=jquery.slim></script>
+    <script src=lib/bootbox.min.js data-depends="bootstrap jquery.slim"></script>
+    <script src=lib/nebulas.js></script>
+    <script src=js/1-localSave.js></script>
+    <script src=js/home.v1.js></script>
+    <script src=js/i18n.js data-depends=jquery.slim></script>
+    <script src=js/ui-block.js data-depends="bootbox blockies jquery.slim i18n.js nebulas.js"></script>
+    <script>
+        var nebulas = require("nebulas"),
+            Account = nebulas.Account,
+            neb = new nebulas.Neb(),
+            hash = location.search.slice(1),
+            validateAll = uiBlock.validate();
+
+        uiBlock.insert({
+            footer: ".footer",
+            header: ".header",
+            logoMain: ".logo-main",
+            numberComma: ".number-comma"
+        });
+
+        neb.setRequest(new nebulas.HttpRequest(localSave.getItem("apiPrefix") || "https://testnet.nebulas.io/"));
+        $("#btn").on("click", onClickBtn);
+
+        if (hash) {
+            $("#input").val(hash);
+            $("#btn").trigger("click");
+        }
+
+        function onClickBtn() {
+            var addr = $("#input").val();
+
+            if (validateAll()) {
+                $(".modal.loading").modal("show");
+
+                neb.api.getTransactionReceipt(addr)
+                    .then(doneGetTransactionReceipt)
+                    .catch(function (o) {
+                        $(".modal.loading").modal("hide");
+
+                        bootbox.dialog({
+                            backdrop: true,
+                            message: i18n.apiErrorToText(o.message),
+                            onEscape: true,
+                            size: "large",
+                            title: "Error"
+                        });
+                    });
+            } else {
+                $(".errmsg").removeClass("active1");
+                setTimeout(function () {
+                    $(".errmsg").addClass("active1");
+                }, 2000);
+            }
+        }
+
+        function doneGetTransactionReceipt(o) {
+            $(".modal.loading").modal("hide");
+
+            $("#info").removeClass("active1");
+            $("#code").text(o.data);
+            $(".tx_hash").text(o.hash);
+            $(".contract_addr").text(o.contract_address);
+            $(".status").text(o.status == 1 ? "success" : (o.status == 0 ? "fail" : "pending"));
+            $(".from_address").text(o.from);
+            $(".to_address").text(o.to);
+            $(".nonce").text(o.nonce);
+
+            $(".amount input").val(o.value).trigger("input");
+            $(".gas-limit input").val(o.gas_limit).trigger("input");
+            $(".gas-price input").val(o.gas_price).trigger("input");
+            $(".gas-used input").val(o.gas_used).trigger("input");
+        }
+    </script>
+</body>
+
+</html>

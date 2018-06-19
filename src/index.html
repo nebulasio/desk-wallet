@@ -1,0 +1,113 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset=utf-8>
+    <link rel="icon shortcut" href=img/logo.png type=image/png>
+    <link rel=apple-touch-icon href=img/logo.png>
+    <link rel=stylesheet href=lib/bootstrap-4.0.0-dist/css/bootstrap.min.css>
+    <link rel=stylesheet href=css/base.css>
+    <link rel=stylesheet href=css/ui-block.css>
+    <meta name=viewport content="width=device-width">
+    <title>NEBULAS</title>
+    <style>
+        input {
+            text-align: center;
+        }
+
+        .active1 {
+            display: none;
+        }
+
+        .download {
+            margin-top: 48px;
+            text-align: center;
+        }
+
+        .wallet_help {
+            font-size: 0.8rem;
+        }
+    </style>
+</head>
+<body>
+    <div class=logo-main></div>
+    <div class=header></div>
+
+    <div class="container wallet">
+        <div id=newWallet>
+            <div class=form-group>
+                <label for=password data-i18n=new/enter-password>Enter a password:（Not less than 9 characters）</label>
+                <input type=password class=form-control id=password data-i18n=new/placeholder/do-not-forget placeholder="Do NOT forget to save this!" data-validate-order-matters="required lengthGt8">
+            </div>
+            <button class="btn btn-block" data-i18n=new/new id=creat>Create New Wallet</button>
+        </div>
+        <div class="active1 download">
+            <h1>
+                <span data-i18n=new/save1>Save your</span>
+                <code data-i18n=keystore-file></code>
+                <span data-i18n=new/save3>File.</span>
+            </h1>
+            <button class="btn btn-block" data-i18n=new/gen>Download Keystore File</button>
+        </div>
+        <p class=wallet_help data-i18n=new/comment>
+            This password encrypts your private key.
+            <br>This does not act as a seed to generate your keys.
+            <br>You will need this password + your private key to unlock your wallet.
+        </p>
+    </div>
+
+    <div class=footer></div>
+
+    <script src=lib/jquery-3.3.1.min.js></script>
+    <script>if (typeof module === 'object') {window.jQuery = window.$ = module.exports;};</script>
+    <script src=lib/bootstrap-4.0.0-dist/js/bootstrap.bundle.min.js data-depends=jquery.slim></script>
+    <script src=lib/bootbox.min.js data-depends="bootstrap jquery.slim"></script>
+    <script src=lib/Blob.js></script>
+    <script src=lib/FileSaver.min.js></script>
+    <script src=lib/nebulas.js></script>
+    <script src=js/1-localSave.js></script>
+    <script src=js/home.v1.js></script>
+    <script src=js/i18n.js data-depends=jquery.slim></script>
+    <script src=js/ui-block.js data-depends="bootbox blockies jquery.slim i18n.js nebulas.js"></script>
+    <script>
+        "use strict";
+
+        // replace ="([^ =]+)" with =$1
+
+        var nebulas = require("nebulas"),
+            account = nebulas.Account.NewAccount(), //TODO：流程位置 应该在创建之后 。创建密码应该删除 
+            validateAll = uiBlock.validate();
+
+        uiBlock.insert({
+            footer: ".footer",
+            header: ".header",
+            logoMain: ".logo-main"
+        });
+
+        $("#creat").on("click", onClickCreate);
+        $(".download button").on("click", onClickDownloadButton);
+
+        function onClickCreate() {
+            validateAll() && $(".download").removeClass("active1");
+        }
+
+        function onClickDownloadButton() {
+            var password = $("#password").val(), address, keyStr, blob;
+
+            if (validateAll()) {
+                bootbox.alert({
+                    message: "waiting...",
+                    title: "info"
+                });
+
+                // window.open('tokey.html?password=' + password, '_blank');
+
+                address = account.getAddressString();
+                keyStr = account.toKeyString(password);
+                blob = new Blob([keyStr], { type: "application/json; charset=utf-8" });
+                saveAs(blob, address);
+                bootbox.hideAll();
+            }
+        }
+    </script>
+</body>
+</html>
